@@ -39,3 +39,12 @@ def create_project(project: ProjectCreate):
     projects.append(new_project)
 
     return new_project
+
+@app.delete("/projects/{project_id}")
+def delete_project(project_id: int):
+    for project in projects:
+        if project["id"] == project_id:
+            projects.remove(project)
+            return {"message": "Project deleted successfully"}
+
+    raise HTTPException(status_code=404, detail="Project not found")
