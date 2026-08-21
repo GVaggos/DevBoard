@@ -92,3 +92,25 @@ def delete_project(project_id: int):
             return {"message": "Project deleted successfully"}
 
     raise HTTPException(status_code=404, detail="Project not found")
+
+@app.post("/tasks")
+def create_task(task: TaskCreate):
+    project_exists = any(
+        project["id"] == task.project_id
+        for project in projects
+    )
+
+    if not project_exists:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    new_task = {
+        "id": len(tasks) + 1,
+        "title": task.title,
+        "project_id": task.project_id,
+        "status": task.status,
+        "priority": task.priority
+    }
+
+    tasks.append(new_task)
+
+    return new_task
