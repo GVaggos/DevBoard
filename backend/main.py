@@ -114,3 +114,20 @@ def create_task(task: TaskCreate):
     tasks.append(new_task)
 
     return new_task
+
+@app.get("/projects/{project_id}/tasks")
+def get_project_tasks(project_id: int):
+    project_exists = any(
+        project["id"] == project_id
+        for project in projects
+    )
+
+    if not project_exists:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    project_tasks = [
+        task for task in tasks
+        if task["project_id"] == project_id
+    ]
+
+    return project_tasks
