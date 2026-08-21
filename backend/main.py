@@ -34,6 +34,11 @@ class TaskCreate(BaseModel):
     status: str = "todo"
     priority: str = "medium"
 
+class TaskUpdate(BaseModel):
+    title: str
+    status: str
+    priority: str
+
 
 # --------------------
 # HOME
@@ -139,3 +144,16 @@ def get_project_tasks(project_id: int):
     ]
 
     return project_tasks
+
+
+@app.put("/tasks/{task_id}")
+def update_task(task_id: int, updated_task: TaskUpdate):
+    for task in tasks:
+        if task["id"] == task_id:
+            task["title"] = updated_task.title
+            task["status"] = updated_task.status
+            task["priority"] = updated_task.priority
+
+            return task
+
+    raise HTTPException(status_code=404, detail="Task not found")
