@@ -100,22 +100,43 @@ def create_project(project: ProjectCreate):
 
 @app.put("/projects/{project_id}")
 def update_project(project_id: int, updated_project: ProjectUpdate):
-    for project in projects:
-        if project["id"] == project_id:
-            project["name"] = updated_project.name
-            return project
+    db = SessionLocal()
 
-    raise HTTPException(status_code=404, detail="Project not found")
+    project = db.query(models.Project).filter(
+        models.Project.id == project_id
+    ).first()
+
+    if not project:
+        db.close()
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    project.name = updated_project.name
+
+    db.commit()
+    db.refresh(project)
+
+    db.close()
+
+    return project
 
 
 @app.delete("/projects/{project_id}")
 def delete_project(project_id: int):
-    for project in projects:
-        if project["id"] == project_id:
-            projects.remove(project)
-            return {"message": "Project deleted successfully"}
+    db = SessionLocal()
 
-    raise HTTPException(status_code=404, detail="Project not found")
+    project = db.query(models.Project).filter(
+        models.Project.id == project_id
+    ).first()
+
+    if not project:
+        db.close()
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    db.delete(project)
+    db.commit()
+    db.close()
+
+    return {"message": "Project deleted successfully"}
 
 @app.post("/tasks")
 def create_task(task: TaskCreate):
