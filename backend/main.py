@@ -9,15 +9,9 @@ app = FastAPI()
 
 
 # --------------------
-# DATA
-# --------------------
 
-projects = [
-    {"id": 1, "name": "DevBoard"},
-    {"id": 2, "name": "Test Project"}
-]
 
-tasks = []
+
 
 
 # --------------------
@@ -204,22 +198,42 @@ def get_project_tasks(project_id: int):
 
 @app.put("/tasks/{task_id}")
 def update_task(task_id: int, updated_task: TaskUpdate):
-    for task in tasks:
-        if task["id"] == task_id:
-            task["title"] = updated_task.title
-            task["status"] = updated_task.status
-            task["priority"] = updated_task.priority
+    db = SessionLocal()
 
-            return task
+    task = db.query(models.Task).filter(
+        models.Task.id == task_id
+    ).first()
 
-    raise HTTPException(status_code=404, detail="Task not found")
+    if not task:
+        db.close()
+        raise HTTPException(status_code=404, detail="Task not found")
+
+    task.title = updated_task.title
+    task.status = updated_task.status
+    task.priority = updated_task.priority
+
+    db.commit()
+    db.refresh(task)
+
+    db.close()
+
+    return task
 
 
 @app.delete("/tasks/{task_id}")
 def delete_task(task_id: int):
-    for task in tasks:
-        if task["id"] == task_id:
-            tasks.remove(task)
-            return {"message": "Task deleted successfully"}
+    db = SessionLocal()
 
-    raise HTTPException(status_code=404, detail="Task not found")
+    task = db.query(models.Task).filter(
+        models.Task.id == task_id
+    ).first()
+
+    if not task:
+        db.close()
+        raise HTTPException(status_code=404, detail="Task not found")
+
+    db.delete(task)
+    db.commit()
+    db.close()
+
+    return {"message": "Task deleted successfully"}
