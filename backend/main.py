@@ -1,8 +1,23 @@
+from urllib import response
+
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from database import Base, engine, SessionLocal
 import models
 from pwdlib import PasswordHash 
+import os
+import jwt
+
+from datetime import datetime, timedelta, timezone
+from dotenv import load_dotenv
+
+load_dotenv()
+
+SECRET_KEY = os.getenv("SECRET_KEY")
+ALGORITHM = os.getenv("ALGORITHM", "HS256")
+ACCESS_TOKEN_EXPIRE_MINUTES = int(
+    os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "60")
+)
 
 Base.metadata.create_all(bind=engine)
 
@@ -61,6 +76,26 @@ def home():
 # --------------------
 # PROJECTS
 # --------------------
+
+def create_access_token(user_id: int):
+    expire = datetime.now(timezone.utc) + timedelta(
+        minutes=ACCESS_TOKEN_EXPIRE_MINUTES
+    )
+
+    payload = {
+        "sub": str(user_id),
+        "exp": expire
+    }
+
+    token = jwt.encode(
+        payload,
+        SECRET_KEY,
+        algorithm=ALGORITHM
+    )
+
+    return token
+
+
 
 @app.get("/projects")
 def get_projects():
@@ -317,8 +352,11 @@ def login_user(credentials: UserLogin):
             detail="Invalid username or password"
         )
 
+    access_token = create_access_token(user.id)
+
     response = {
-        "message": "Login successful",
+        "access_token": access_token,
+        "token_type": "bearer",
         "user": {
             "id": user.id,
             "username": user.username,
@@ -327,7 +365,4 @@ def login_user(credentials: UserLogin):
     }
 
     db.close()
-
     return response
-
-
