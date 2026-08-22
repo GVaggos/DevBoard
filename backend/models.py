@@ -17,3 +17,12 @@ class Task(Base):
     project_id = Column(Integer, ForeignKey("projects.id"), nullable=False)
     status = Column(String, nullable=False, default="todo")
     priority = Column(String, nullable=False, default="medium")
+
+
+class User(Base):
+    __tablename__ = "users"
+
+    id = Column(Integer, primary_key=True, index=True)
+    username = Column(String, unique=True, nullable=False, index=True)
+    email = Column(String, unique=True, nullable=False, index=True)
+    hashed_password = Column(String, nullable=False)

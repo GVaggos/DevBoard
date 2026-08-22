@@ -2,10 +2,13 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from database import Base, engine, SessionLocal
 import models
+from pwdlib import PasswordHash 
 
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
+
+password_hash = PasswordHash.recommended()
 
 
 # --------------------
@@ -36,6 +39,11 @@ class TaskUpdate(BaseModel):
     title: str
     status: str
     priority: str
+
+class UserCreate(BaseModel):
+    username: str
+    email: str
+    password: str
 
 
 # --------------------
@@ -237,3 +245,44 @@ def delete_task(task_id: int):
     db.close()
 
     return {"message": "Task deleted successfully"}
+
+
+@app.post("/register")
+def register_user(user: UserCreate):
+    db = SessionLocal()
+
+    existing_username = db.query(models.User).filter(
+        models.User.username == user.username
+    ).first()
+
+    if existing_username:
+        db.close()
+        raise HTTPException(status_code=400, detail="Username already exists")
+
+    existing_email = db.query(models.User).filter(
+        models.User.email == user.email
+    ).first()
+
+    if existing_email:
+        db.close()
+        raise HTTPException(status_code=400, detail="Email already exists")
+
+    hashed_password = password_hash.hash(user.password)
+
+    new_user = models.User(
+        username=user.username,
+        email=user.email,
+        hashed_password=hashed_password
+    )
+
+    db.add(new_user)
+    db.commit()
+    db.refresh(new_user)
+
+    db.close()
+
+    return {
+        "id": new_user.id,
+        "username": new_user.username,
+        "email": new_user.email
+    }
