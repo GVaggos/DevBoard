@@ -140,48 +140,64 @@ def delete_project(project_id: int):
 
 @app.post("/tasks")
 def create_task(task: TaskCreate):
-    project_exists = any(
-        project["id"] == task.project_id
-        for project in projects
-    )
+    db = SessionLocal()
 
-    if not project_exists:
+    project = db.query(models.Project).filter(
+        models.Project.id == task.project_id
+    ).first()
+
+    if not project:
+        db.close()
         raise HTTPException(status_code=404, detail="Project not found")
 
-    new_task = {
-        "id": len(tasks) + 1,
-        "title": task.title,
-        "project_id": task.project_id,
-        "status": task.status,
-        "priority": task.priority
-    }
+    new_task = models.Task(
+        title=task.title,
+        project_id=task.project_id,
+        status=task.status,
+        priority=task.priority
+    )
 
-    tasks.append(new_task)
+    db.add(new_task)
+    db.commit()
+    db.refresh(new_task)
+
+    db.close()
 
     return new_task
 
+
 @app.get("/tasks/{task_id}")
 def get_task(task_id: int):
-    for task in tasks:
-        if task["id"] == task_id:
-            return task
+    db = SessionLocal()
 
-    raise HTTPException(status_code=404, detail="Task not found")
+    task = db.query(models.Task).filter(
+        models.Task.id == task_id
+    ).first()
+
+    db.close()
+
+    if not task:
+        raise HTTPException(status_code=404, detail="Task not found")
+
+    return task
 
 @app.get("/projects/{project_id}/tasks")
 def get_project_tasks(project_id: int):
-    project_exists = any(
-        project["id"] == project_id
-        for project in projects
-    )
+    db = SessionLocal()
 
-    if not project_exists:
+    project = db.query(models.Project).filter(
+        models.Project.id == project_id
+    ).first()
+
+    if not project:
+        db.close()
         raise HTTPException(status_code=404, detail="Project not found")
 
-    project_tasks = [
-        task for task in tasks
-        if task["project_id"] == project_id
-    ]
+    project_tasks = db.query(models.Task).filter(
+        models.Task.project_id == project_id
+    ).all()
+
+    db.close()
 
     return project_tasks
 
