@@ -10,6 +10,8 @@ import jwt
 
 from datetime import datetime, timedelta, timezone
 from dotenv import load_dotenv
+from fastapi import Depends
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
 load_dotenv()
 
@@ -24,6 +26,7 @@ Base.metadata.create_all(bind=engine)
 app = FastAPI()
 
 password_hash = PasswordHash.recommended()
+security = HTTPBearer()
 
 
 # --------------------
@@ -283,6 +286,50 @@ def delete_task(task_id: int):
     db.close()
 
     return {"message": "Task deleted successfully"}
+
+def get_current_user(
+    credentials: HTTPAuthorizationCredentials = Depends(security)
+):
+    token = credentials.credentials
+
+    try:
+        payload = jwt.decode(
+            token,
+            SECRET_KEY,
+            algorithms=[ALGORITHM]
+        )
+
+        user_id = int(payload.get("sub"))
+
+    except Exception:
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid or expired token"
+        )
+
+    db = SessionLocal()
+
+    user = db.query(models.User).filter(
+        models.User.id == user_id
+    ).first()
+
+    db.close()
+
+    if not user:
+        raise HTTPException(
+            status_code=401,
+            detail="User not found"
+        )
+
+    return user
+
+@app.get("/me")
+def get_me(current_user = Depends(get_current_user)):
+    return {
+        "id": current_user.id,
+        "username": current_user.username,
+        "email": current_user.email
+    }
 
 
 @app.post("/register")
