@@ -45,6 +45,9 @@ class UserCreate(BaseModel):
     email: str
     password: str
 
+class UserLogin(BaseModel):
+    username: str
+    password: str
 
 # --------------------
 # HOME
@@ -286,3 +289,45 @@ def register_user(user: UserCreate):
         "username": new_user.username,
         "email": new_user.email
     }
+
+@app.post("/login")
+def login_user(credentials: UserLogin):
+    db = SessionLocal()
+
+    user = db.query(models.User).filter(
+        models.User.username == credentials.username
+    ).first()
+
+    if not user:
+        db.close()
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid username or password"
+        )
+
+    password_is_valid = password_hash.verify(
+        credentials.password,
+        user.hashed_password
+    )
+
+    if not password_is_valid:
+        db.close()
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid username or password"
+        )
+
+    response = {
+        "message": "Login successful",
+        "user": {
+            "id": user.id,
+            "username": user.username,
+            "email": user.email
+        }
+    }
+
+    db.close()
+
+    return response
+
+
