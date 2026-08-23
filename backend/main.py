@@ -12,6 +12,8 @@ from datetime import datetime, timedelta, timezone
 from dotenv import load_dotenv
 from fastapi import Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi.middleware.cors import CORSMiddleware
+from typing import Literal
 
 load_dotenv()
 
@@ -24,6 +26,17 @@ ACCESS_TOKEN_EXPIRE_MINUTES = int(
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 password_hash = PasswordHash.recommended()
 security = HTTPBearer()
@@ -50,14 +63,14 @@ class ProjectUpdate(BaseModel):
 class TaskCreate(BaseModel):
     title: str
     project_id: int
-    status: str = "todo"
-    priority: str = "medium"
+    status: Literal["todo", "in_progress", "done"] = "todo"
+    priority: Literal["low", "medium", "high"] = "medium"
 
 class TaskUpdate(BaseModel):
     title: str
-    status: str
-    priority: str
-
+    status: Literal["todo", "in_progress", "done"]
+    priority: Literal["low", "medium", "high"]
+    
 class UserCreate(BaseModel):
     username: str
     email: str
