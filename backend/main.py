@@ -240,11 +240,15 @@ def delete_project(
     return {"message": "Project deleted successfully"}
 
 @app.post("/tasks")
-def create_task(task: TaskCreate):
+def create_task(
+    task: TaskCreate,
+    current_user = Depends(get_current_user)
+):
     db = SessionLocal()
 
     project = db.query(models.Project).filter(
-        models.Project.id == task.project_id
+        models.Project.id == task.project_id,
+        models.Project.user_id == current_user.id
     ).first()
 
     if not project:
@@ -267,27 +271,16 @@ def create_task(task: TaskCreate):
     return new_task
 
 
-@app.get("/tasks/{task_id}")
-def get_task(task_id: int):
-    db = SessionLocal()
-
-    task = db.query(models.Task).filter(
-        models.Task.id == task_id
-    ).first()
-
-    db.close()
-
-    if not task:
-        raise HTTPException(status_code=404, detail="Task not found")
-
-    return task
-
 @app.get("/projects/{project_id}/tasks")
-def get_project_tasks(project_id: int):
+def get_project_tasks(
+    project_id: int,
+    current_user = Depends(get_current_user)
+):
     db = SessionLocal()
 
     project = db.query(models.Project).filter(
-        models.Project.id == project_id
+        models.Project.id == project_id,
+        models.Project.user_id == current_user.id
     ).first()
 
     if not project:
@@ -304,16 +297,27 @@ def get_project_tasks(project_id: int):
 
 
 @app.put("/tasks/{task_id}")
-def update_task(task_id: int, updated_task: TaskUpdate):
+def update_task(
+    task_id: int,
+    updated_task: TaskUpdate,
+    current_user = Depends(get_current_user)
+):
     db = SessionLocal()
 
-    task = db.query(models.Task).filter(
-        models.Task.id == task_id
+    task = db.query(models.Task).join(
+        models.Project,
+        models.Task.project_id == models.Project.id
+    ).filter(
+        models.Task.id == task_id,
+        models.Project.user_id == current_user.id
     ).first()
 
     if not task:
         db.close()
-        raise HTTPException(status_code=404, detail="Task not found")
+        raise HTTPException(
+            status_code=404,
+            detail="Task not found"
+        )
 
     task.title = updated_task.title
     task.status = updated_task.status
@@ -326,18 +330,27 @@ def update_task(task_id: int, updated_task: TaskUpdate):
 
     return task
 
-
 @app.delete("/tasks/{task_id}")
-def delete_task(task_id: int):
+def delete_task(
+    task_id: int,
+    current_user = Depends(get_current_user)
+):
     db = SessionLocal()
 
-    task = db.query(models.Task).filter(
-        models.Task.id == task_id
+    task = db.query(models.Task).join(
+        models.Project,
+        models.Task.project_id == models.Project.id
+    ).filter(
+        models.Task.id == task_id,
+        models.Project.user_id == current_user.id
     ).first()
 
     if not task:
         db.close()
-        raise HTTPException(status_code=404, detail="Task not found")
+        raise HTTPException(
+            status_code=404,
+            detail="Task not found"
+        )
 
     db.delete(task)
     db.commit()
