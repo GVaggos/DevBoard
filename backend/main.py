@@ -98,6 +98,63 @@ def create_access_token(user_id: int):
 
     return token
 
+def get_current_user(
+    credentials: HTTPAuthorizationCredentials = Depends(security)
+):
+    token = credentials.credentials
+
+    try:
+        payload = jwt.decode(
+            token,
+            SECRET_KEY,
+            algorithms=[ALGORITHM]
+        )
+
+        user_id = int(payload.get("sub"))
+
+    except Exception:
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid or expired token"
+        )
+
+    db = SessionLocal()
+
+    user = db.query(models.User).filter(
+        models.User.id == user_id
+    ).first()
+
+    db.close()
+
+    if not user:
+        raise HTTPException(
+            status_code=401,
+            detail="User not found"
+        )
+
+    return user
+
+
+@app.post("/projects")
+def create_project(
+    project: ProjectCreate,
+    current_user = Depends(get_current_user)
+):
+    db = SessionLocal()
+
+    new_project = models.Project(
+        name=project.name,
+        user_id=current_user.id
+    )
+
+    db.add(new_project)
+    db.commit()
+    db.refresh(new_project)
+
+    db.close()
+
+    return new_project
+
 
 
 @app.get("/projects")
@@ -124,22 +181,6 @@ def get_project(project_id: int):
         raise HTTPException(status_code=404, detail="Project not found")
 
     return project
-
-
-@app.post("/projects")
-def create_project(project: ProjectCreate):
-    db = SessionLocal()
-
-    new_project = models.Project(name=project.name)
-
-    db.add(new_project)
-    db.commit()
-    db.refresh(new_project)
-
-    db.close()
-
-    return new_project
-
 
 @app.put("/projects/{project_id}")
 def update_project(project_id: int, updated_project: ProjectUpdate):
