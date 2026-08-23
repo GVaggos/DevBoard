@@ -158,21 +158,29 @@ def create_project(
 
 
 @app.get("/projects")
-def get_projects():
+def get_projects(
+    current_user = Depends(get_current_user)
+):
     db = SessionLocal()
 
-    projects = db.query(models.Project).all()
+    projects = db.query(models.Project).filter(
+        models.Project.user_id == current_user.id
+    ).all()
 
     db.close()
 
     return projects
 
 @app.get("/projects/{project_id}")
-def get_project(project_id: int):
+def get_project(
+    project_id: int,
+    current_user = Depends(get_current_user)
+):
     db = SessionLocal()
 
     project = db.query(models.Project).filter(
-        models.Project.id == project_id
+        models.Project.id == project_id,
+        models.Project.user_id == current_user.id
     ).first()
 
     db.close()
@@ -183,11 +191,16 @@ def get_project(project_id: int):
     return project
 
 @app.put("/projects/{project_id}")
-def update_project(project_id: int, updated_project: ProjectUpdate):
+def update_project(
+    project_id: int,
+    updated_project: ProjectUpdate,
+    current_user = Depends(get_current_user)
+):
     db = SessionLocal()
 
     project = db.query(models.Project).filter(
-        models.Project.id == project_id
+        models.Project.id == project_id,
+        models.Project.user_id == current_user.id
     ).first()
 
     if not project:
@@ -205,11 +218,15 @@ def update_project(project_id: int, updated_project: ProjectUpdate):
 
 
 @app.delete("/projects/{project_id}")
-def delete_project(project_id: int):
+def delete_project(
+    project_id: int,
+    current_user = Depends(get_current_user)
+):
     db = SessionLocal()
 
     project = db.query(models.Project).filter(
-        models.Project.id == project_id
+        models.Project.id == project_id,
+        models.Project.user_id == current_user.id
     ).first()
 
     if not project:
