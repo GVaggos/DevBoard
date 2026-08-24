@@ -1,14 +1,18 @@
 import { useState } from "react"
+import { Link, useNavigate } from "react-router-dom"
 import {
   ArrowRight,
   CheckCircle2,
   LockKeyhole,
+  Mail,
   UserRound,
 } from "lucide-react"
-import { Link } from "react-router-dom"
 
-function Login() {
+function Register() {
+  const navigate = useNavigate()
+
   const [username, setUsername] = useState("")
+  const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
@@ -20,13 +24,14 @@ function Login() {
     setLoading(true)
 
     try {
-      const response = await fetch("http://127.0.0.1:8000/login", {
+      const response = await fetch("http://127.0.0.1:8000/register", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
           username,
+          email,
           password,
         }),
       })
@@ -34,13 +39,11 @@ function Login() {
       const data = await response.json()
 
       if (!response.ok) {
-        throw new Error(data.detail || "Login failed")
+        throw new Error(data.detail || "Registration failed")
       }
 
-      localStorage.setItem("access_token", data.access_token)
-      localStorage.setItem("user", JSON.stringify(data.user))
-
-      alert("Login successful!")
+      alert("Account created successfully!")
+      navigate("/login")
     } catch (error) {
       setError(error.message)
     } finally {
@@ -58,33 +61,33 @@ function Login() {
           </div>
 
           <div className="auth-hero-content">
-            <span className="eyebrow">WORK SMARTER</span>
+            <span className="eyebrow">GET STARTED</span>
 
             <h1>
-              Keep your projects
+              Turn your ideas
               <br />
-              moving forward.
+              into progress.
             </h1>
 
             <p>
-              A clean workspace for organizing projects,
-              managing tasks and staying focused.
+              Create your workspace and keep your projects,
+              tasks and priorities organized.
             </p>
 
             <div className="feature-list">
               <div>
                 <CheckCircle2 size={18} />
-                Organize projects in one place
+                Create and manage projects
               </div>
 
               <div>
                 <CheckCircle2 size={18} />
-                Track tasks and priorities
+                Organize your daily tasks
               </div>
 
               <div>
                 <CheckCircle2 size={18} />
-                Focus on what matters
+                Track your progress
               </div>
             </div>
           </div>
@@ -102,10 +105,10 @@ function Login() {
 
           <div className="auth-card">
             <div className="auth-heading">
-              <span className="auth-label">WELCOME BACK</span>
-              <h2>Sign in to DevBoard</h2>
+              <span className="auth-label">JOIN DEVBOARD</span>
+              <h2>Create your account</h2>
               <p>
-                Enter your details to continue to your workspace.
+                Start organizing your projects in one clean workspace.
               </p>
             </div>
 
@@ -121,10 +124,28 @@ function Login() {
 
                   <input
                     type="text"
-                    placeholder="Enter your username"
+                    placeholder="Choose a username"
                     value={username}
                     onChange={(event) =>
                       setUsername(event.target.value)
+                    }
+                    required
+                  />
+                </div>
+              </label>
+
+              <label>
+                Email
+
+                <div className="input-wrapper">
+                  <Mail size={18} />
+
+                  <input
+                    type="email"
+                    placeholder="Enter your email"
+                    value={email}
+                    onChange={(event) =>
+                      setEmail(event.target.value)
                     }
                     required
                   />
@@ -139,7 +160,7 @@ function Login() {
 
                   <input
                     type="password"
-                    placeholder="Enter your password"
+                    placeholder="Create a password"
                     value={password}
                     onChange={(event) =>
                       setPassword(event.target.value)
@@ -160,16 +181,16 @@ function Login() {
                 type="submit"
                 disabled={loading}
               >
-                {loading ? "Signing in..." : "Sign in"}
+                {loading ? "Creating account..." : "Create account"}
 
                 {!loading && <ArrowRight size={18} />}
               </button>
             </form>
 
             <p className="auth-switch">
-  New to DevBoard?{" "}
-  <Link to="/register">Create an account</Link>
-              </p>
+              Already have an account?{" "}
+              <Link to="/login">Sign in</Link>
+            </p>
           </div>
         </div>
       </section>
@@ -177,4 +198,4 @@ function Login() {
   )
 }
 
-export default Login
+export default Register

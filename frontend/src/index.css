@@ -319,3 +319,19 @@ a {
     margin: 0 auto;
   }
 }
+
+
+.auth-error {
+  margin: -4px 0 0;
+  padding: 11px 13px;
+  border-radius: 10px;
+  background: #fef2f2;
+  color: #dc2626;
+  font-size: 13px;
+}
+
+.primary-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+  transform: none;
+}
